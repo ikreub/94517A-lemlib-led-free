@@ -106,7 +106,7 @@ inline pros::MotorGroup lift({3, -15});
 inline pros::Motor claw_right(-8);
 inline pros::Motor claw_left(7);
 
-inline lift_mpc Lift(lift_tracker, lift, 12.5, 9.5, 3, {.Ra = 3.8, .KT = 6 / (1.1 * M_PI), .KE = 12 / (1.1 * M_PI), .dband = 0.169});
+inline lift_mpc Lift(lift_tracker, lift, 12.5, 9.5, 3, {.Ra = 3.8, .KT = 24 / (1.1 * M_PI), .KE = 12 / (1.1 * M_PI), .dband = 0.169});
 
 inline pros::adi::DigitalOut claw('A');
 inline piston Claw(claw);
