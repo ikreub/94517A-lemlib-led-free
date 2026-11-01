@@ -8,6 +8,23 @@
 #include <vector>
 #include <functional>
 #include "pathgen.hpp"
+#include <iostream>
+
+class ScaledIMU : public pros::Imu {
+public:
+    // Constructor passes the smart port to the base class and saves the multiplier
+    ScaledIMU(int port, double scalar) 
+        : pros::Imu(port), m_port(port), m_scalar(scalar) {}
+
+    // Overrides LemLib's call to get the rotation
+    virtual double get_rotation() const override { 
+        return pros::c::imu_get_rotation(m_port) * m_scalar; 
+    }
+
+private:
+    const int m_port;
+    const double m_scalar;
+};
 
 class piston{
     public:
@@ -37,7 +54,7 @@ inline pros::MotorGroup right_motors({16, 14}, pros::MotorGearset::blue);
 
 inline lemlib::Drivetrain drivetrain(&left_motors, &right_motors, 11.5, lemlib::Omniwheel::NEW_325, 480, 2);
 
-inline pros::IMU imu(9);
+inline ScaledIMU imu(9, 1.0102);
 inline pros::Rotation vert(-4);
 inline pros::Rotation horiz(-11);
 
@@ -124,12 +141,62 @@ inline int p2 = 0;
 
 inline double voltage = 0;
 
+inline double true_modulo(double x, double y) {
+    double remainder = std::fmod(x, y);
+    // If the remainder and divisor have opposite signs, shift it by the divisor
+    if ((remainder < 0 && y > 0) || (remainder > 0 && y < 0)) {
+        remainder += y;
+    }
+    return remainder;
+}
+
+inline double trueDist(double raw, double angle, double perp_off, double par_off){
+    raw = raw / 25.4;
+    angle = true_modulo(angle + 45.0, 90.0) - 45.0;
+    std::cout << "Distance Adjustment: \ndist: " << raw << "\nangle: " << angle << "\n vert offset: " << perp_off << "\n horiz offset: " << par_off;
+    angle = angle * M_PI / 180;
+
+    std::cout << "\nfinal dist: " << (raw + perp_off) * cos(angle) - par_off * sin(angle) << "\n\n";
+    return (raw + perp_off) * cos(angle) - par_off * sin(angle);
+}
+
+inline double angleReset(double base_angle, double left, double right, double l_o, double r_o){
+    left = left / 25.4;
+    right = right / 25.4;
+    double Dl = right - left;
+    double Do = r_o - l_o;
+    double add_angle = 180 * atan(Dl / Do) / M_PI;
+    std::cout << "Angle Reset: \nleft: " << left << "\nright: " << right << "\nangle: " << add_angle << "\n";
+    if(fabs(add_angle) <= 20){
+        std::cout << "accepted\n\n";
+        return base_angle + add_angle;
+    }else{
+        std::cout << "discarded\n\n";
+        return imu.get_rotation();
+    }
+}
+
 inline void wait_until_claw(int timeout){
     double time = 0;
     while(Claw.get() == true){
         pros::delay(20);
         time += 20;
         if(time > timeout){
+            Claw.set(false);
+        }
+    }
+}
+
+inline void wait_until_lift(int timeout){
+    pros::delay(300);
+    double time = 300;
+    while(Claw.get() == true){
+        pros::delay(20);
+        time += 20;
+        if(time > timeout){
+            Claw.set(false);
+        }
+        if(lift_tracker.get_velocity() > -1){
             Claw.set(false);
         }
     }
@@ -206,13 +273,7 @@ inline double error = 0;
 inline double Perror = 0;
 
 inline double sign(double x){
-    if(x >= 0){
-        return 1;
-    }else if(x < 0){
-        return -1;
-    }else{
-        return 0;
-    }
+    return x < 0 ? -1 : x > 0 ? 1 : 0;
 }
 
 inline std::vector<double>  lift_poses = {};

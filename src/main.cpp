@@ -138,7 +138,7 @@ void competition_initialize() {}
 void autonomous() {
     switch (page) {
     case 0:
-        lift_test();
+        left1_4();
         break;
     case 1:
         left2_2();
@@ -200,6 +200,7 @@ void opcontrol() {
 
         if(controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_DOWN)){
             Claw.toggle();
+            auto_clamp = false;
         }
 
         if(controller.get_digital(pros::E_CONTROLLER_DIGITAL_B)){
