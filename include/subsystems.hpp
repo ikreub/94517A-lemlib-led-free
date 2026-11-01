@@ -10,6 +10,8 @@
 #include "pathgen.hpp"
 #include <iostream>
 
+inline pros::adi::Led led('C', 20);
+
 class ScaledIMU : public pros::Imu {
 public:
     // Constructor passes the smart port to the base class and saves the multiplier

@@ -167,11 +167,14 @@ void autonomous() {
  */
 
 void opcontrol() {
+    led.set_all(0x0088FF);
+    led.set_pixel(0x00FF00, 5);
     bool auto_clamp = false;
     int ac_timer = 0;
     Wrist.set(false);
     // loop forever
     while (true) {
+        led.update();
         // get left y and right x positions
         int rightY = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y);
         int leftX = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_X);
